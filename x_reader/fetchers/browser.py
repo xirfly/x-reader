@@ -58,6 +58,7 @@ async def fetch_via_browser(url: str, storage_state: str = None) -> dict:
             await page.goto(url, wait_until="domcontentloaded", timeout=TIMEOUT_MS)
 
             is_xhs = "xiaohongshu.com" in url or "xhslink.com" in url
+            is_wechat = "mp.weixin.qq.com" in url
 
             if is_xhs:
                 # XHS SPA needs the note container to render
@@ -89,8 +90,49 @@ async def fetch_via_browser(url: str, storage_state: str = None) -> dict:
                     "url": page.url,
                     "author": (data["author"] or "").strip(),
                 }
+            elif is_wechat:
+                # WeChat Public Accounts specific extraction to preserve images
+                await page.wait_for_timeout(2000)
+
+                title = await page.title()
+                content = await page.evaluate("""() => {
+                    const container = document.querySelector('#js_content') || document.querySelector('.rich_media_content');
+                    if (!container) return null; // Safe fallback to generic if not found
+                    
+                    let elements = [];
+                    const walk = (node) => {
+                        if (node.tagName === 'IMG') {
+                           let src = node.getAttribute('data-src') || node.getAttribute('src');
+                           if (src) elements.push(`![image](${src})`);
+                        } else if (node.nodeType === 3) { // Text node
+                           let text = node.textContent.trim();
+                           if (text) elements.push(text);
+                        } else if (node.nodeType === 1) { // Element node
+                           for (let child of node.childNodes) walk(child);
+                        }
+                    };
+                    walk(container);
+                    return elements.join('\\n\\n');
+                }""")
+
+                # Generic fallback if WeChat specific extraction yields nothing
+                if not content:
+                    content = await page.evaluate("""() => {
+                        const el = document.querySelector('article')
+                            || document.querySelector('main')
+                            || document.querySelector('.content')
+                            || document.body;
+                        return el ? el.innerText : '';
+                    }""")
+
+                result = {
+                    "title": (title or "").strip()[:200],
+                    "content": (content or "").strip(),
+                    "url": page.url,
+                    "author": "",
+                }
             else:
-                # Generic fallback for non-XHS pages
+                # Generic fallback for non-XHS/WeChat pages
                 await page.wait_for_timeout(2000)
 
                 title = await page.title()

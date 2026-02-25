@@ -6,8 +6,20 @@ WeChat article fetcher — two-tier fallback:
 2. Playwright headless (no login needed for public articles)
 """
 
+import re
 from loguru import logger
 from typing import Dict, Any
+
+
+def _proxy_wechat_images(content: str) -> str:
+    """Replace WeChat image URLs with a proxy to bypass anti-hotlinking."""
+    if not content:
+        return content
+    return re.sub(
+        r'(https?://mmbiz\.qpic\.cn/[^\s\)]+)',
+        r'https://wsrv.nl/?url=\1',
+        content
+    )
 
 
 async def fetch_wechat(url: str) -> Dict[str, Any]:
@@ -29,7 +41,7 @@ async def fetch_wechat(url: str) -> Dict[str, Any]:
         if data.get("content"):
             return {
                 "title": data["title"],
-                "content": data["content"],
+                "content": _proxy_wechat_images(data["content"]),
                 "author": data.get("author", ""),
                 "url": url,
                 "platform": "wechat",
@@ -46,7 +58,7 @@ async def fetch_wechat(url: str) -> Dict[str, Any]:
         data = await fetch_via_browser(url)
         return {
             "title": data["title"],
-            "content": data["content"],
+            "content": _proxy_wechat_images(data["content"]),
             "author": data.get("author", ""),
             "url": url,
             "platform": "wechat",

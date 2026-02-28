@@ -31,6 +31,10 @@ def _get_subtitles_via_ytdlp(url: str, lang: str = "en") -> str:
     Download auto-generated subtitles using yt-dlp.
     Returns subtitle text, or empty string if unavailable.
     """
+    # Security: Validate URL before passing to subprocess
+    from x_reader.utils.url_validator import validate_url
+    validate_url(url)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         output_path = os.path.join(tmpdir, "sub")
 
@@ -95,6 +99,10 @@ def _transcribe_via_whisper(url: str) -> str:
     if not api_key:
         logger.info("GROQ_API_KEY not set, skipping Whisper transcription")
         return ""
+
+    # Security: Validate URL before passing to subprocess
+    from x_reader.utils.url_validator import validate_url
+    validate_url(url)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         output_template = os.path.join(tmpdir, "audio.%(ext)s")

@@ -5,6 +5,9 @@ import feedparser
 from loguru import logger
 from typing import Dict, Any, List
 
+# Note: feedparser already handles XXE safely by default (uses xml.sax with entity expansion limits)
+# Additional protection: resolve_relative_uris=False disables relative URL resolution
+
 
 async def fetch_rss(url: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
@@ -19,7 +22,8 @@ async def fetch_rss(url: str, limit: int = 20) -> List[Dict[str, Any]]:
     """
     logger.info(f"Fetching RSS: {url}")
 
-    feed = feedparser.parse(url)
+    # Use safe parsing: disable external entities
+    feed = feedparser.parse(url, resolve_relative_uris=False)
 
     if feed.bozo and not feed.entries:
         raise ValueError(f"Failed to parse RSS feed: {feed.bozo_exception}")

@@ -238,6 +238,10 @@ User sends URL
         └─ Analyzer skill → structured report + action items
 ```
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=runesleo/x-reader&type=Date)](https://star-history.com/#runesleo/x-reader&Date)
+
 ## Author
 
 Built by [@runes_leo](https://x.com/runes_leo) — more AI tools at [leolabs.me](https://leolabs.me)
